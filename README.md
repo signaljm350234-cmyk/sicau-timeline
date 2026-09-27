@@ -4,8 +4,9 @@
 **学科竞赛与双创 / 二课活动(i川农) / 综测加分 / 课程与考试 / 评奖评优与推免**五类事项，共 124 条规划事件（61 条官方已确认）。
 
 **在线访问**：
-- GitHub Pages：`https://signaljm350234-cmyk.github.io/sicau-timeline/`
-- 腾讯云 CloudBase：部署中（步骤见 [`docs/DEPLOY_TENCENT.md`](docs/DEPLOY_TENCENT.md)）
+- 🟢 **国内推荐**：`https://sicau-timeline.pages.dev`（Cloudflare Pages，免备案）
+- GitHub Pages（海外/备用）：`https://signaljm350234-cmyk.github.io/sicau-timeline/`
+- 部署细节见 [`docs/DEPLOY_CLOUDFLARE.md`](docs/DEPLOY_CLOUDFLARE.md) / [`docs/DEPLOY_TENCENT.md`](docs/DEPLOY_TENCENT.md)
 
 ## 特点
 
