@@ -8,7 +8,7 @@
 | A2 | validate_data.py 0 错误；无来源条目=0；文件 UTF-8 | 同上 + 编码检查 | ☑ 已达：0 错误；无来源=0 |
 | A3 | 事件卡可展开详情并含可点击来源；confidence 徽标显示正确 | `python tools/check_app.py`（卡片展开断言）+ `python tools/check_links.py`（来源抽检 10/10 可访问） | ☑ 已达（2026-09-27） |
 | A4 | 375px 手机宽度与桌面均正常；控制台 0 error；两种打开方式均可用 | check_app.py：file:// 与 http://localhost:8000 各 11/11 通过；手机 scrollWidth=375；FCP 172ms | ☑ 已达（2026-09-27） |
-| A5 | GitHub Pages 线上可访问且与本地一致 | 线上 URL 实测 + 数据比对 | ☐ 待 P5（gh 未安装，届时提醒授权） |
+| A5 | GitHub Pages 线上可访问且与本地一致 | 线上 URL 实测 + 数据比对 | ☑ 已达：Cloudflare Pages `https://sicau-timeline.pages.dev`（国内主用，免备案，实测 124 卡片 / 0 报错）+ GitHub Pages `https://signaljm350234-cmyk.github.io/sicau-timeline/`（备用）；双线路均由 Git push 自动部署 |
 | A6 | CSS 变量含 palette.md ≥4 个色值；"颜色↔五类别"对照表存在且实际生效；无第三方资源 | assets/css/style.css 含 `#131011 #231C1D #583F36 #86D0BC #EDB148 #982B2C #EDE5D6 #9C9388` 及图1渐变全量；对照表：页面页脚图例 + research/prototypes/README.md；噪点/弧线/图标均 CSS/SVG 内联，0 外部请求 | ☑ 已达（2026-09-27） |
 | A7 | docs/ 三份文档齐全（MAINTENANCE/DEPLOY/ACCEPTANCE）；维护指南可让用户独立新增一条事件 | 按 MAINTENANCE.md 演练：注入测试事件 → 校验（125 条 0 错误）→ 删除还原（124 条 0 错误） | ☑ 已达（2026-09-27） |
 
