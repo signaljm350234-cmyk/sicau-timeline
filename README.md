@@ -3,7 +3,9 @@
 四川农业大学 公共管理学院 · 土地资源管理专业 2025级（2025.9—2029.6）全周期成长时间轴：
 **学科竞赛与双创 / 二课活动(i川农) / 综测加分 / 课程与考试 / 评奖评优与推免**五类事项，共 124 条规划事件（61 条官方已确认）。
 
-**在线访问**：`https://<用户名>.github.io/sicau-timeline/`（部署后替换）
+**在线访问**：
+- GitHub Pages：`https://signaljm350234-cmyk.github.io/sicau-timeline/`
+- 腾讯云 CloudBase：部署中（步骤见 [`docs/DEPLOY_TENCENT.md`](docs/DEPLOY_TENCENT.md)）
 
 ## 特点
 
