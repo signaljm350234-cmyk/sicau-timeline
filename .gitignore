@@ -1,0 +1,9 @@
+# 本地调研资料（含第三方版权参考图、原始页面存档），不入公开仓库
+research/
+
+# 临时文件
+*.tmp
+*.log
+Thumbs.db
+desktop.ini
+.DS_Store
