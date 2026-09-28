@@ -892,6 +892,25 @@ window.EVENTS = [
     "notes": "国土空间规划直接对应培养方案核心课（国土空间规划理论与方法/技术及应用）——土资专业含金量最高的省赛之一"
   },
   {
+    "id": "rural-territorial-space-value-5th-2026",
+    "title": "第五届全国大学生乡村国土空间价值提升规划设计大赛（2026-2027）",
+    "categories": ["competition"],
+    "level": "国家级",
+    "organizer": "中国国土经济学会、世界青年科学家联合会自然资源与城乡发展专委会",
+    "audience_tag": "全校可参加",
+    "semester": "2026-2027-1",
+    "registration": { "start": "", "end": "", "note": "分赛区组委会于2026年11月10日前指定村庄并下发报名通知；同一学生仅限参加一个分赛区" },
+    "event": { "start": "2027-04-01", "end": "2027-05-10", "note": "分赛区大赛2027年4月上旬；全国现场大赛初步定2027年5月上旬（云南农业大学）" },
+    "points": { "second_classroom": "经学校认定后按国家级竞赛通道赋分（以教务处当年竞赛目录为准）", "zongce": "附加分=实际得分×25%（大二上限8分）" },
+    "sources": [
+      { "title": "关于举办第五届全国大学生乡村国土空间价值提升规划设计大赛的通知（一号）（中国国土经济学会官方公众号发布，未标注发布日期）", "url": "https://mp.weixin.qq.com/s?__biz=Mzk0OTQyODM1NA==&mid=2247494182&idx=1&sn=6528960d8330691a5d3a4878bcbfa3b1", "published": "", "accessed": "2026-09-28" }
+    ],
+    "confidence": "confirmed",
+    "basis": "",
+    "recurring": true,
+    "notes": "主题：统筹优化村镇布局、推进和美乡村建设；团队≤5名学生、指导教师≤4名；作品=研究报告+规划方案(Word/PDF)+海报(120×80cm, ≥300dpi)。分赛区划分及报名方式以学会后续通知为准"
+  },
+  {
     "id": "energy-saving-competition-2026",
     "title": "第二十届全国大学生节能减排社会实践与科技竞赛校内选拔赛（2026年）",
     "categories": ["competition"],
