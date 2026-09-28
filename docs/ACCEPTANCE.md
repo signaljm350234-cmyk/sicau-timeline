@@ -11,6 +11,7 @@
 | A5 | GitHub Pages 线上可访问且与本地一致 | 线上 URL 实测 + 数据比对 | ☑ 已达：Cloudflare Pages `https://sicau-timeline.pages.dev`（国内主用，免备案，实测 124 卡片 / 0 报错）+ GitHub Pages `https://signaljm350234-cmyk.github.io/sicau-timeline/`（备用）；双线路均由 Git push 自动部署 |
 | A6 | CSS 变量含 palette.md ≥4 个色值；"颜色↔五类别"对照表存在且实际生效；无第三方资源 | assets/css/style.css 含 `#131011 #231C1D #583F36 #86D0BC #EDB148 #982B2C #EDE5D6 #9C9388` 及图1渐变全量；对照表：页面页脚图例 + research/prototypes/README.md；噪点/弧线/图标均 CSS/SVG 内联，0 外部请求 | ☑ 已达（2026-09-27） |
 | A7 | docs/ 三份文档齐全（MAINTENANCE/DEPLOY/ACCEPTANCE）；维护指南可让用户独立新增一条事件 | 按 MAINTENANCE.md 演练：注入测试事件 → 校验（125 条 0 错误）→ 删除还原（124 条 0 错误） | ☑ 已达（2026-09-27） |
+| A8 | （追加）安全防护：防 iframe 嵌套劫持 / 防外域跳转 / 响应头齐全 / 源码无注入 | `python tools/check_security.py`（13 项断言） | ☑ 已达（2026-09-28，见 docs/SECURITY.md） |
 
 ## 数据缺口与免责（如实声明）
 

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>防护样板页（本地测试用）</title>
+<!-- ==================== 安全样板（可整体复制走） ====================
+  HTTP 头版本（Nginx / Cloudflare Pages _headers，优先级最高）：
+    X-Frame-Options: DENY
+    X-Content-Type-Options: nosniff
+    Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
+      img-src 'self' data:; font-src 'self'; object-src 'none'; frame-src 'none';
+      frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests
+  Nginx 示例：
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" always;
+  说明：① frame-ancestors 只能通过 HTTP 头生效，meta 版本不支持（浏览器会忽略）；
+        ② navigate-to 已被 CSP 规范移除、所有浏览器均未实现（写入只会产生控制台告警），
+           跨域跳转拦截由脚本的点击拦截实现等效目标。
+=================================================================================== -->
+<script>
+/* ---------- 页面级兜底防护（内联样板版） ---------- */
+(function () {
+  "use strict";
+  var W = window, D = document;
+
+  /* 1) 反 iframe 嵌套：被嵌则强制跳出到顶层（含 2s 巡检） */
+  function bust() {
+    try {
+      if (W.top === W.self) return;
+      var target = W.location.href;
+      try { W.top.location.replace(target); return; } catch (e1) { }
+      try { W.top.location.href = target; return; } catch (e2) { }
+      try { W.top.location = target; return; } catch (e3) { }
+      try { D.documentElement.style.visibility = "hidden"; } catch (e4) { }
+      try { W.open(target, "_top"); } catch (e5) { }
+    } catch (e) { }
+  }
+  bust();
+  try { W.setInterval(bust, 2000); } catch (e) { }
+
+  /* 2) 同源判断 */
+  function isSame(u) {
+    try { return new URL(u, W.location.href).origin === W.location.origin; }
+    catch (e) { return false; }
+  }
+
+  /* 3) 拦截"当前窗口"向外部域名跳转（_blank 放行） */
+  function closestA(n) {
+    while (n && n.nodeType === 1) {
+      var t = n.tagName;
+      if (t && (t === "A" || t === "a")) return n;
+      n = n.parentNode;
+    }
+    return null;
+  }
+  try {
+    D.addEventListener("click", function (ev) {
+      var a = closestA(ev.target);
+      if (!a) return;
+      var raw = a.getAttribute("href") || "";
+      if (raw.slice(0, 11).toLowerCase() === "javascript:") { ev.preventDefault(); return; }
+      if (raw.charAt(0) === "#" || raw === "") return;
+      if (a.target && a.target !== "_self") return;
+      if (!isSame(a.href)) ev.preventDefault();
+    }, true);
+  } catch (e) { }
+
+  /* 4) location.assign / replace 守卫（不可伪造时静默跳过） */
+  try {
+    var _a = W.location.assign, _r = W.location.replace;
+    try { W.location.assign = function (u) { if (isSame(u)) _a.call(W.location, u); }; } catch (e1) { }
+    try { W.location.replace = function (u) { if (isSame(u)) _r.call(W.location, u); }; } catch (e2) { }
+  } catch (e) { }
+
+  /* 5) meta CSP（样板演示用；生产环境请优先用 HTTP 头） */
+  try {
+    if (/^https?:$/.test(W.location.protocol)) {
+      var meta = D.createElement("meta");
+      meta.setAttribute("http-equiv", "Content-Security-Policy");
+      meta.setAttribute("content",
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; " +
+        "img-src 'self' data:; font-src 'self'; object-src 'none'; frame-src 'none'; " +
+        "base-uri 'self'; form-action 'self'; upgrade-insecure-requests");
+      var head = D.head || D.documentElement;
+      head.insertBefore(meta, head.firstChild);
+    }
+  } catch (e) { }
+})();
+</script>
+<!-- ==================== 样板结束 ==================== -->
+<style>
+body{background:#131011;color:#EDE5D6;font-family:"Microsoft YaHei",sans-serif;padding:40px;text-align:center}
+a{color:#86D0BC}
+.box{border:1px solid #583F36;max-width:520px;margin:0 auto;padding:24px}
+</style>
+</head>
+<body>
+<div class="box">
+<h2>防护样板页</h2>
+<p>如果你能在顶层窗口看到本页（而不是被嵌在别人的 iframe 里），说明反嵌套防护生效。</p>
+<p><a href="https://example.com/" target="_blank">外链示例（_blank 放行）</a> ｜ <a href="#top">同页锚点（放行）</a></p>
+</div>
+</body>
+</html>

@@ -1,0 +1,10 @@
+# Cloudflare Pages 响应头（安全防护 · 优先级最高的一层）
+# 说明：Cloudflare Pages 会自动读取根目录 _headers 文件并附加到响应。
+# 注意：GitHub Pages 不支持自定义响应头，该站依赖 security.js 的兜底防护。
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests
