@@ -269,7 +269,7 @@ window.EVENTS = [
     "confidence": "confirmed",
     "basis": "",
     "recurring": true,
-    "notes": "土地资源管理就业口径含公务员/自然资源系统，微专业契合；每年12月底前后发布简章"
+    "notes": "土地资源管理就业方向包括公务员/自然资源系统岗位；每年12月底前后发布简章"
   },
   {
     "id": "exam-ethics-winter-2025",
@@ -348,7 +348,7 @@ window.EVENTS = [
     "confidence": "pattern",
     "basis": "2025-03-05/03-09/03-17 连续开展三场（fpa/1092/2622、2596、2633）；2024-03 同类（fpa/1092/1333区域活动）—3月5日为惯例锚点",
     "recurring": true,
-    "notes": "雷锋月为志愿类二课集中供给期；平江同学可在i川农搜索“志愿”报名"
+    "notes": "雷锋月为志愿类活动集中开展期；活动通过i川农发布与报名"
   },
   {
     "id": "research-interest-conclusion-spring-2026",
@@ -716,7 +716,7 @@ window.EVENTS = [
     "confidence": "confirmed",
     "basis": "",
     "recurring": true,
-    "notes": "第一届2024-04-24通知（2024-12-04结束）；第三届2026-06-23通知—土资专业最对口赛事，与全国土地国情调查大赛衔接"
+    "notes": "第一届2024-04-24通知（2024-12-04结束）；第三届2026-06-23通知；优胜队伍推荐参加第十一届全国大学生土地资源实践创新大赛（见相关条目）"
   },
   {
     "id": "public-admin-case-2nd-2026",
@@ -870,7 +870,7 @@ window.EVENTS = [
     "confidence": "confirmed",
     "basis": "",
     "recurring": true,
-    "notes": "大挑（课外学术）两年一届；本届国赛2027年。作品须为2027-06-01前两年内成果；集体作品3-10人；哲学社科类提交社会调查报告——与土资专业调研高度契合"
+    "notes": "大挑（课外学术）两年一届；本届国赛2027年。作品须为2027-06-01前两年内成果；集体作品3-10人；哲学社科类作品提交社会调查报告"
   },
   {
     "id": "golden-land-cup-10th-2026",
@@ -889,7 +889,7 @@ window.EVENTS = [
     "confidence": "confirmed",
     "basis": "",
     "recurring": true,
-    "notes": "国土空间规划直接对应培养方案核心课（国土空间规划理论与方法/技术及应用）——土资专业含金量最高的省赛之一"
+    "notes": "对应培养方案核心课程：国土空间规划理论与方法、国土空间规划技术及应用"
   },
   {
     "id": "rural-territorial-space-value-5th-2026",
@@ -965,7 +965,7 @@ window.EVENTS = [
     "confidence": "confirmed",
     "basis": "",
     "recurring": true,
-    "notes": "面向2025级补录团委职业发展部代理部长1名；补录窗口短（3天），需盯学院官网"
+    "notes": "面向2025级补录团委职业发展部代理部长1名；本次报名窗口为9月21-23日（3天）"
   },
   {
     "id": "physical-test-autumn-2026",
@@ -1063,7 +1063,7 @@ window.EVENTS = [
     "confidence": "confirmed",
     "basis": "",
     "recurring": true,
-    "notes": "大一未考的同学建议大二上完成；教资/公务员岗位需要"
+    "notes": "普通话证书在教师资格认定及部分公务员/事业单位岗位招考中有等级要求"
   },
   {
     "id": "national-scholarship-2026",
@@ -1472,7 +1472,7 @@ window.EVENTS = [
     "confidence": "predicted",
     "basis": "第十届决赛2026-08-23在南京农业大学（江西农大国土学院官网2026-08-26新闻）；学院2026-06-23通知明确“为第十一届…选拔决赛队伍”；第十一届具体日期未公布",
     "recurring": true,
-    "notes": "第十届报道：大赛统筹融合全国大学生不动产估价技能大赛、国土空间规划技能大赛等板块；土资专业最对口的国家级赛事之一。公开渠道未见组委会通知网页版（来源为高校官网报道+学院选拔通知）"
+    "notes": "第十届报道：大赛统筹融合全国大学生不动产估价技能大赛、国土空间规划技能大赛等板块；公开渠道未见组委会通知网页版（来源为高校官网报道+学院选拔通知）"
   },
   {
     "id": "national-territorial-planning-competition-7th-2027",
@@ -1492,7 +1492,7 @@ window.EVENTS = [
     "confidence": "predicted",
     "basis": "第五届2025年于广州落幕（广州规自局官网）；第六届2026年于长沙（2026-08-23湖南大学闭幕，河南理工建艺学院新闻2026-08-26）；第七届日期未公布",
     "recurring": true,
-    "notes": "含城乡规划毕业设计（论文）赛道，每年1届；规划类强校传统赛事，土资专业可跨专业组队参与。公开渠道未见全国组委会通知网页版（现有来源为承办校及政府官网报道），报名通常经各校组织"
+    "notes": "含城乡规划毕业设计（论文）赛道，每年1届。公开渠道未见全国组委会通知网页版（现有来源为承办校及政府官网报道），报名通常经各校组织"
   },
   {
     "id": "ruc-rural-land-rights-survey-2027",
@@ -1747,7 +1747,7 @@ window.EVENTS = [
     "confidence": "confirmed",
     "basis": "",
     "recurring": true,
-    "notes": "培养方案建议大二暑期启动科研与竞赛深耕"
+    "notes": ""
   },
   {
     "id": "semester-start-2027-2028-1",
@@ -2072,7 +2072,7 @@ window.EVENTS = [
     "confidence": "pattern",
     "basis": "2025-03-19（fpa/2652）、2026-03-10（fpa/4830）两届均为3月",
     "recurring": true,
-    "notes": "大三下建议完成科研兴趣/大创结题，为推免“创新能力评价成绩”攒素材"
+    "notes": "科研兴趣/大创结题时间在推免“创新能力评价成绩”认定（大四秋，见相关条目）之前"
   },
   {
     "id": "challenge-cup-16th-provincial-2028",
