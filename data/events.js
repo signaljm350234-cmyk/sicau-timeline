@@ -1454,6 +1454,46 @@ window.EVENTS = [
     "notes": ""
   },
   {
+    "id": "land-resource-innovation-11th-2027",
+    "title": "全国大学生土地资源实践创新大赛（第十一届，2027年）",
+    "categories": ["competition"],
+    "level": "国家级",
+    "organizer": "教育部高等学校公共管理类专业教学指导委员会（中国土地学会等指导）",
+    "audience_tag": "全校可参加",
+    "semester": "2026-2027-2",
+    "registration": { "start": "", "end": "", "note": "校内推荐通道：学院“研土有你”大赛遴选推荐（见相关条目）；全国报名窗口以官方通知为准" },
+    "event": { "start": "2027-03-01", "end": "2027-08-31", "note": "第十届决赛2026-08-23于南京农业大学落幕；第十一届赛程预判2027年春季报名、暑期决赛（以官方为准）" },
+    "points": { "second_classroom": "国赛获奖经认定后按国家级竞赛通道赋分（以教务处当年竞赛目录为准）", "zongce": "附加分=实际得分×25%" },
+    "sources": [
+      { "title": "国土院学子在第十届全国大学生土地资源实践创新大赛中喜获佳绩（学院官网新闻，含决赛时间地点）", "url": "http://guotu.jxau.edu.cn/", "published": "2026-08-26", "accessed": "2026-09-28" },
+      { "title": "第三届“研土有你”土地国情调查大赛通知（学院选拔：为第十一届全国大学生土地资源实践创新大赛选队）", "url": "https://fpa.sicau.edu.cn/info/1007/7190.htm", "published": "2026-06-23", "accessed": "2026-09-28" }
+    ],
+    "confidence": "predicted",
+    "basis": "第十届决赛2026-08-23在南京农业大学（江西农大国土学院官网2026-08-26新闻）；学院2026-06-23通知明确“为第十一届…选拔决赛队伍”；第十一届具体日期未公布",
+    "recurring": true,
+    "notes": "第十届报道：大赛统筹融合全国大学生不动产估价技能大赛、国土空间规划技能大赛等板块；土资专业最对口的国家级赛事之一"
+  },
+  {
+    "id": "national-territorial-planning-competition-7th-2027",
+    "title": "全国大学生国土空间规划设计竞赛暨城乡规划毕业设计（论文）竞赛（“未来规划师”，第七届·2027）",
+    "categories": ["competition"],
+    "level": "国家级",
+    "organizer": "自然资源部人力资源开发中心（以官方通知为准）",
+    "audience_tag": "全校可参加",
+    "semester": "2026-2027-2",
+    "registration": { "start": "", "end": "", "note": "赛程通常春季启动；以官方通知为准" },
+    "event": { "start": "2027-03-01", "end": "2027-08-31", "note": "第五届2025·广州、第六届2026·长沙（2026-08-23于湖南大学闭幕）；第七届时间待官方公布" },
+    "points": { "second_classroom": "国赛获奖经认定后按国家级竞赛通道赋分（以教务处当年竞赛目录为准）", "zongce": "附加分=实际得分×25%" },
+    "sources": [
+      { "title": "我院在2026年第六届全国大学生国土空间规划设计竞赛中再创佳绩（学院官网新闻，含闭幕时间地点）", "url": "http://jzys.hpu.edu.cn/index.htm", "published": "2026-08-26", "accessed": "2026-09-28" },
+      { "title": "未来规划师——“广州规划杯”第五届全国大学生国土空间规划设计竞赛在广州圆满落幕（广州市规划和自然资源局官网）", "url": "https://ghzyj.gz.gov.cn/xwzx/gzdt/content/post_10411747.html", "published": "", "accessed": "2026-09-28" }
+    ],
+    "confidence": "predicted",
+    "basis": "第五届2025年于广州落幕（广州规自局官网）；第六届2026年于长沙（2026-08-23湖南大学闭幕，河南理工建艺学院新闻2026-08-26）；第七届日期未公布",
+    "recurring": true,
+    "notes": "含城乡规划毕业设计（论文）赛道，每年1届；规划类强校传统赛事，土资专业可跨专业组队参与"
+  },
+  {
     "id": "research-interest-conclusion-spring-2027",
     "title": "2027年春季科研兴趣培养计划结题（大二下）",
     "categories": ["competition"],
