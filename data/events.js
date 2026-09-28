@@ -1494,6 +1494,25 @@ window.EVENTS = [
     "notes": "含城乡规划毕业设计（论文）赛道，每年1届；规划类强校传统赛事，土资专业可跨专业组队参与"
   },
   {
+    "id": "ruc-rural-land-rights-survey-2027",
+    "title": "全国农村承包地权益调查·调查员招募（2027年批次，参考2026年）",
+    "categories": ["second_classroom"],
+    "level": "国家级",
+    "organizer": "中国人民大学中国调查与数据中心（全国农村承包地权益调查项目）",
+    "audience_tag": "全校可参加",
+    "semester": "2026-2027-2",
+    "registration": { "start": "", "end": "", "note": "2026年批次报名截止6月30日、扫码报名（官方原文）；2027年批次预计同期招募，以公众号 RUCdiaoxie 通知为准" },
+    "event": { "start": "2027-07-01", "end": "2027-08-31", "note": "2026年批次：首次培训7月3日、7-8月实地入户调查（安卓手机/Pad电子问卷采集）" },
+    "points": { "second_classroom": "大型社会调查经历，可作社会实践/科研履历（综测认定以学院当年口径为准）", "zongce": "视认定；另有劳务费、意外保险与人大中国调查与数据中心颁发的实践证明" },
+    "sources": [
+      { "title": "全国农村承包地权益调查2026调查员招募文件（RUCdiaoxie 公众号，含报名截止、培训与调查安排；页面未标注发布日期）", "url": "https://mp.weixin.qq.com/s/0yCsHfYW7PgNaXaikCiF1g", "published": "", "accessed": "2026-09-28" }
+    ],
+    "confidence": "predicted",
+    "basis": "2026年批次官方招募文件：报名截止2026-06-30、首次培训2026-07-03、7-8月实地调查（覆盖14省约100县市，含四川）；2027年批次是否招募及时间未公布",
+    "recurring": true,
+    "notes": "项目背景：人大中国调查与数据中心大型调查网络（历史上含1999/2001/2005/2008/2010/2011/2016年“17省调查”与2018/2019/2021年“千人百村”等）。咨询邮箱 yuzhaoyang@ruc.edu.cn"
+  },
+  {
     "id": "research-interest-conclusion-spring-2027",
     "title": "2027年春季科研兴趣培养计划结题（大二下）",
     "categories": ["competition"],
