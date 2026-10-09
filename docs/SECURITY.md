@@ -29,6 +29,9 @@ frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-re
    噪点纹理与 favicon 用 data: URI——完全禁用会导致页面样式残破。脚本层仍为严格 `script-src 'self'`（零内联 JS）。
 4. **meta CSP 仅 http(s) 注入**：若静态写入 meta，`file://` 双击离线模式会因 `'self'` 无法匹配
    而加载不到 css/js/font，破坏"双击 index.html 即可用"的交付要求；故由 security.js 在 http(s) 环境动态注入。
+5. **`upgrade-insecure-requests` 仅在 https 源注入**（2026-10-09 修复）：早期版本在 http 下也注入该
+   指令，导致手机经局域网 http（如 `http://192.168.x.x`）访问时 css/js/font 被强制升级为 https 而全部
+   阻断（表现为裸 HTML）。现已仅在 https 注入；`check_security.py` 增加 C6–C8「局域网源模拟」回归防复发。
 
 ## 已知局限（如实声明）
 
@@ -45,8 +48,8 @@ frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-re
 ```powershell
 python tools/check_security.py
 ```
-自动完成 13 项断言：源码恶意模式扫描（5 文件）→ 本地 iframe 逃逸实测 → http/file 双模式功能回归 →
-线上响应头 + 线上 124 卡片/0 报错回归。
+自动完成 16 项断言：源码恶意模式扫描（6 文件）→ 本地 iframe 逃逸实测 → http/file 双模式功能回归 →
+局域网源模拟（非 localhost http 源不被 CSP 阻断子资源）→ 线上响应头 + 线上 129 卡片/0 报错回归。
 
 手工测试页（`tools/security-tests/`）：
 - `attacker-frame.html`：模拟恶意站点嵌套——被嵌套的样板页应"逃逸"到顶层；

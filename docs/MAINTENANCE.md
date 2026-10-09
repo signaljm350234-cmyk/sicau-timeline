@@ -8,6 +8,7 @@
 index.html          页面骨架（开场动画 + 结构）
 assets/css/style.css  全部样式（含回退字体、深浅色、移动端适配）
 assets/js/app.js      渲染逻辑（筛选 / 倒计时 / 学期导航 / 开场动画）
+assets/js/user-layer.js 个人条目层（访客本机增删/隐藏/导入导出，不碰 events.js）
 data/events.js        全部事件数据 ← 日常只改这里
 docs/                 文档（本文件 / DEPLOY.md / ACCEPTANCE.md）
 tools/               校验与辅助脚本（validate_data.py 最常用）
@@ -78,3 +79,11 @@ tools/               校验与辅助脚本（validate_data.py 最常用）
 
 - 采集与记录过程、来源清单、色板、PDF 识别结果等在本地 `research/` 目录（**不发布**，含第三方参考图）。
 - 政策类数字（二课分值/综测上限/推免名额）以 `research/OCR结果.md` 转录的官方文件为准；一切以学校当年最新文件为最终依据。
+
+## 7. 个人条目层（页面内功能，与 data/events.js 无关）
+
+- 页面筛选栏下方有「＋ 添加 / 管理」：访客可新增自定义条目、删除（自定义=永久）/ 隐藏（内置=可恢复）条目、导出 / 导入 JSON 备份。
+- 数据只存**访客本机浏览器** localStorage（键：`tl-user-events-v1` 自定义条目、`tl-hidden-ids-v1` 隐藏名单），**永远不会写入 data/events.js，也不上传任何服务器**。
+- 容量上限：自定义 200 条 / 隐藏名单 300 条；换浏览器、清缓存、无痕模式都会丢，建议用「导出」备份。
+- 自检脚本：`python tools/check_user_layer.py`（file:// 与 http 双模式，30 项断言）。
+- 页面内删除按钮文案：自定义条目为「永久删除」，内置条目为「隐藏」（均可取消）。

@@ -12,6 +12,7 @@
 | A6 | CSS 变量含 palette.md ≥4 个色值；"颜色↔五类别"对照表存在且实际生效；无第三方资源 | assets/css/style.css 含 `#131011 #231C1D #583F36 #86D0BC #EDB148 #982B2C #EDE5D6 #9C9388` 及图1渐变全量；对照表：页面页脚图例 + research/prototypes/README.md；噪点/弧线/图标均 CSS/SVG 内联，0 外部请求 | ☑ 已达（2026-09-27） |
 | A7 | docs/ 三份文档齐全（MAINTENANCE/DEPLOY/ACCEPTANCE）；维护指南可让用户独立新增一条事件 | 按 MAINTENANCE.md 演练：注入测试事件 → 校验（125 条 0 错误）→ 删除还原（124 条 0 错误） | ☑ 已达（2026-09-27） |
 | A8 | （追加）安全防护：防 iframe 嵌套劫持 / 防外域跳转 / 响应头齐全 / 源码无注入 | `python tools/check_security.py`（13 项断言） | ☑ 已达（2026-09-28，见 docs/SECURITY.md） |
+| A9 | （追加 v1.1）个人条目层：添加/删除/隐藏/恢复/导出导入、localStorage 持久化与降级保护、增删后统计/分组/倒计时自适应、既有布局零像素影响 | `python tools/check_user_layer.py`（30 项 × file:// 与 http）+ check_security 16 项 + 线上双线冒烟 7 项 | ☑ 已达（2026-10-09）：真机（手机连电脑热点）手动验收通过 |
 
 ## 数据缺口与免责（如实声明）
 
