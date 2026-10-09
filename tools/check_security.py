@@ -1,7 +1,7 @@
 """安全检查与验证（可重复运行）：
 A. 源码恶意模式扫描（防注入）
 B. 本地 iframe 嵌套逃逸实测（同源场景，验证反嵌套 JS）
-C. 功能回归（file:// 与 http 双模式：卡片数 / 控制台错误）
+C. 功能回归（file:// 与 http 双模式：卡片数 / 控制台错误；含局域网 IP 模拟：CSP 不得阻断子资源）
 D. 线上响应头检查（Cloudflare Pages：XFO / nosniff / CSP）
 用法: python tools/check_security.py
 """
@@ -103,6 +103,24 @@ try:
         check("C3. file:// 离线：卡片=%d" % TOTAL, n2 == TOTAL, "got %s" % n2)
         check("C4. file:// 未注入 meta CSP（保持离线可用）", csp is False, "injected=%s" % csp)
         check("C5. file:// 控制台错误=0", len(errs2) == 0, "errors=%d" % len(errs2))
+
+        # C6-C8: 局域网 http 源（lan.test 映射到 127.0.0.1；非 localhost 无安全豁免，
+        # 复现"手机通过 http://192.168.x.x 访问"场景，验证 CSP/子资源不被阻断）
+        lan_errs = []
+        bl = p.chromium.launch(channel="msedge", headless=True,
+                               args=["--no-proxy-server",
+                                     "--host-resolver-rules=MAP lan.test 127.0.0.1"])
+        pgl = bl.new_page(viewport={"width": 1440, "height": 900})
+        pgl.on("console", lambda m: lan_errs.append(m.text) if m.type == "error" else None)
+        pgl.on("pageerror", lambda e: lan_errs.append(str(e)))
+        pgl.goto("http://lan.test:8899/index.html", wait_until="load", timeout=30000)
+        pgl.wait_for_timeout(2200)
+        nl = pgl.evaluate("document.querySelectorAll('.card').length")
+        bg = pgl.evaluate("getComputedStyle(document.body).backgroundColor")
+        bl.close()
+        check("C6. 局域网 http 源：卡片=%d（脚本未被阻断）" % TOTAL, nl == TOTAL, "got %s" % nl)
+        check("C7. 局域网 http 源：CSS 生效", bg not in ("rgb(255, 255, 255)", "rgba(0, 0, 0, 0)"), "body bg=%s" % bg)
+        check("C8. 局域网 http 源：控制台错误=0", len(lan_errs) == 0, "errors=%d %s" % (len(lan_errs), lan_errs[:2]))
         b.close()
 finally:
     srv.terminate()

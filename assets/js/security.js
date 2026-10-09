@@ -71,12 +71,15 @@
     var http = /^https?:$/.test(W.location.protocol);
     var exists = D.querySelector ? D.querySelector('meta[http-equiv="Content-Security-Policy"]') : null;
     if (http && !exists) {
+      var csp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
+        "img-src 'self' data:; font-src 'self'; object-src 'none'; frame-src 'none'; " +
+        "base-uri 'self'; form-action 'self'";
+      /* 仅在 https 下附加 upgrade-insecure-requests：http（如局域网 IP 直连）若附加，
+         子资源会被强制升到 https:// 而全部阻断（手机通过 http://192.168.x.x 访问即此症状） */
+      if (W.location.protocol === "https:") csp += "; upgrade-insecure-requests";
       var meta = D.createElement("meta");
       meta.setAttribute("http-equiv", "Content-Security-Policy");
-      meta.setAttribute("content",
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
-        "img-src 'self' data:; font-src 'self'; object-src 'none'; frame-src 'none'; " +
-        "base-uri 'self'; form-action 'self'; upgrade-insecure-requests");
+      meta.setAttribute("content", csp);
       var head = D.head || D.documentElement;
       head.insertBefore(meta, head.firstChild);
     }
