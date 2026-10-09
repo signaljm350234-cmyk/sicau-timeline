@@ -321,6 +321,7 @@ body.light .uchip[data-cat="award"].on{color:#fff}
 .tl-err.show{display:block}
 .tl-err button{margin-top:8px}
 .tl-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.tl-actions[hidden]{display:none}
 .tl-btn{min-height:38px;padding:8px 16px;border-radius:8px;font:inherit;font-size:13px;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--txt)}
 .tl-btn:hover{border-color:var(--dim)}
 .tl-btn.primary{background:var(--c-competition);color:var(--gene-ink);border-color:transparent;font-weight:700}
