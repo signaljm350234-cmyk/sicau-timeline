@@ -288,7 +288,7 @@ footer .gaps b{color:var(--txt)}
 /* 自定义徽标（中性色，随主题） */
 .badge.custom{background:color-mix(in srgb, var(--c-course) 16%, transparent);color:var(--c-course);border:1px solid color-mix(in srgb, var(--c-course) 42%, transparent)}
 /* 卡片删除按钮 */
-.card .del{order:1;flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;margin-left:2px;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--dim);font-size:15px;line-height:1;cursor:pointer;padding:0}
+.card .del{order:1;flex:none;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-left:2px;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--dim);font-size:14px;line-height:0;cursor:pointer;padding:0}
 .card .del:hover{color:#E4604E;border-color:color-mix(in srgb, #E4604E 45%, transparent);background:color-mix(in srgb, #E4604E 12%, transparent)}
 /* 模态框 */
 #userModal{position:fixed;inset:0;z-index:1000;background:rgba(10,9,10,.62);display:flex;align-items:center;justify-content:center;padding:20px}
@@ -343,4 +343,6 @@ body.light .tl-btn.danger{color:var(--pr)}
   .tl-2col{grid-template-columns:1fr}
   .uchip{min-height:40px}
   .tl-item .tl-btn{min-height:40px}
+  /* 卡片删除按钮：绝对定位右上角，避免 263px 行宽下换行成孤行 */
+  .card .del{position:absolute;top:10px;right:10px;margin:0}
 }
