@@ -23,10 +23,10 @@
     ["2028-2029-1", "大四上", "2028.9 – 2029.1"],
     ["2028-2029-2", "大四下", "2029.2 – 2029.6"]
   ];
-  var CONF_LABEL = { confirmed: "已确认", pattern: "历史规律", predicted: "预计" };
+  var CONF_LABEL = { confirmed: "已确认", pattern: "历史规律", predicted: "预计", custom: "自定义" };
   var TODAY = new Date();
   TODAY.setHours(0, 0, 0, 0);
-  var EV = (window.EVENTS || []).slice();
+  var EV = window.UserLayer ? window.UserLayer.merge(window.EVENTS || []) : (window.EVENTS || []).slice();
 
   var $ = function (s) { return document.querySelector(s); };
   var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
@@ -134,7 +134,7 @@
       var cd = it.n === 0 ? "今天 D-0" : (it.n === 1 ? "明天 D-1" : "D-" + it.n + " 天");
       return '<div class="up-item">' + catDots(it.e.categories) +
         '<span class="cd ' + cls + '">' + cd + '</span>' +
-        '<span class="t">' + it.e.title + '</span>' +
+        '<span class="t">' + esc(it.e.title) + '</span>' +
         '<span class="d">' + it.s + '</span></div>';
     }).join("");
   }
@@ -161,11 +161,12 @@
     var tEl = (e.sources && e.sources.length)
       ? '<a class="ttl" href="' + esc(e.sources[0].url) + '" target="_blank" rel="noopener" title="打开官方通知">' + esc(e.title) + '</a>'
       : '<span class="ttl">' + esc(e.title) + '</span>';
-    return '<article class="card pop" data-cat="' + e.categories.join(" ") + '">' +
+    return '<article class="card pop" data-cat="' + e.categories.join(" ") + '" data-eid="' + esc(e.id) + '">' +
       '<div class="row1"><span class="when">' + (when === "待定" ? "待定" : esc(when)) + '</span>' +
       tEl + gap +
       '<span class="badge ' + e.confidence + '">' + CONF_LABEL[e.confidence] + '</span>' +
-      '<span class="badge lv">' + esc(e.level) + '</span></div>' +
+      '<span class="badge lv">' + esc(e.level) + '</span>' +
+      '<button class="del" type="button" data-del="' + esc(e.id) + '" aria-label="删除或隐藏此条目" title="删除或隐藏此条目">×</button></div>' +
       '<div class="row2"><span>' + catTxt + '</span><span>' + esc(e.organizer) + '</span><span>' + esc(e.audience_tag) + '</span></div>' +
       '<div class="more">' +
       '<div class="seg"><span class="k">TIME</span>报名 ' + esc(e.registration.start || "—") + (e.registration.end ? " ~ " + esc(e.registration.end) : "") +
@@ -175,7 +176,7 @@
       '<div class="seg"><span class="k">二课</span>' + esc(e.points.second_classroom) + '</div>' +
       '<div class="seg"><span class="k">综测</span>' + esc(e.points.zongce) + '</div>' +
       basis + notes +
-      '<div class="seg"><span class="k">来源</span><span class="tag">官方</span></div>' +
+      '<div class="seg"><span class="k">来源</span><span class="tag">' + (e.confidence === "custom" ? "自定义" : "官方") + '</span></div>' +
       '<div class="srcs">' + srcs + '</div>' +
       '</div></article>';
   }
@@ -297,5 +298,15 @@
   initSpy();
   setInterval(renderUpcoming, 30000);
   document.addEventListener("visibilitychange", function () { if (!document.hidden) renderUpcoming(); });
+  /* v1.1 个人条目层：暴露刷新接口并初始化（见 assets/js/user-layer.js） */
+  window.TL = {
+    refreshAll: function () {
+      EV = window.UserLayer ? window.UserLayer.merge(window.EVENTS || []) : EV;
+      renderStats();
+      renderUpcoming();
+      renderTimeline();
+    }
+  };
+  if (window.UserLayer) window.UserLayer.init(window.TL);
   runIntro();
 })();
