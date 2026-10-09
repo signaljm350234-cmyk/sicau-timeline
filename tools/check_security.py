@@ -5,6 +5,7 @@ C. 功能回归（file:// 与 http 双模式：卡片数 / 控制台错误）
 D. 线上响应头检查（Cloudflare Pages：XFO / nosniff / CSP）
 用法: python tools/check_security.py
 """
+import json
 import os
 import re
 import subprocess
@@ -15,6 +16,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 sys.stdout.reconfigure(encoding="gbk", errors="replace")
 import requests
+
+_text = open(os.path.join(ROOT, "data", "events.js"), encoding="utf-8").read()
+TOTAL = len(json.loads(_text[_text.index("["):_text.rindex("]") + 1]))
 
 PASS = []
 FAIL = []
@@ -27,7 +31,7 @@ def check(name, ok, detail=""):
 
 # ---------------- A. 源码扫描 ----------------
 print("== A. 源码恶意模式扫描 ==")
-FILES = ["index.html", "assets/js/app.js", "assets/js/security.js", "data/events.js", "assets/css/style.css"]
+FILES = ["index.html", "assets/js/app.js", "assets/js/security.js", "assets/js/user-layer.js", "data/events.js", "assets/css/style.css"]
 PATTERNS = [
     ("iframe标签", r"<iframe"),
     ("外部脚本", r"""<script[^>]+src=["']https?://"""),
@@ -83,7 +87,7 @@ try:
         pg2.goto("http://127.0.0.1:8899/index.html", wait_until="load", timeout=30000)
         pg2.wait_for_timeout(2200)
         n = pg2.evaluate("document.querySelectorAll('.card').length")
-        check("C1. http 模式：卡片=124", n == 124, "got %s" % n)
+        check("C1. http 模式：卡片=%d" % TOTAL, n == TOTAL, "got %s" % n)
         check("C2. http 模式：控制台错误=0", len(errs) == 0, "errors=%d %s" % (len(errs), errs[:2]))
 
         # file:// 离线模式回归
@@ -96,7 +100,7 @@ try:
         pg3.wait_for_timeout(2200)
         n2 = pg3.evaluate("document.querySelectorAll('.card').length")
         csp = pg3.evaluate("!!document.querySelector('meta[http-equiv=\"Content-Security-Policy\"]')")
-        check("C3. file:// 离线：卡片=124", n2 == 124, "got %s" % n2)
+        check("C3. file:// 离线：卡片=%d" % TOTAL, n2 == TOTAL, "got %s" % n2)
         check("C4. file:// 未注入 meta CSP（保持离线可用）", csp is False, "injected=%s" % csp)
         check("C5. file:// 控制台错误=0", len(errs2) == 0, "errors=%d" % len(errs2))
         b.close()
@@ -126,7 +130,7 @@ try:
         pg.wait_for_timeout(2500)
         n3 = pg.evaluate("document.querySelectorAll('.card').length")
         b.close()
-    check("D5. 线上功能回归：卡片=124", n3 == 124, "got %s" % n3)
+    check("D5. 线上功能回归：卡片=%d" % TOTAL, n3 == TOTAL, "got %s" % n3)
     check("D6. 线上控制台错误=0", len(errs3) == 0, "errors=%d %s" % (len(errs3), errs3[:2]))
 except Exception as e:
     check("D. 线上检查", False, str(e)[:120])

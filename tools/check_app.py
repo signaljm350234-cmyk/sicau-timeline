@@ -5,6 +5,7 @@
 - 开场动画截图（约 360ms 时刻）+ 稳定后全页截图（G4 材料）
 用法: python tools/check_app.py [--http]
 """
+import json
 import os
 import sys
 
@@ -13,6 +14,12 @@ from playwright.sync_api import sync_playwright
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHOTS = os.path.join(ROOT, "research", "prototypes", "shots")
 os.makedirs(SHOTS, exist_ok=True)
+
+# 期望值从内置数据动态计算（数据条数随维护更新，避免硬编码过期）
+_text = open(os.path.join(ROOT, "data", "events.js"), encoding="utf-8").read()
+EVENTS = json.loads(_text[_text.index("["):_text.rindex("]") + 1])
+TOTAL = len(EVENTS)
+N_COMP = sum(1 for e in EVENTS if "competition" in e.get("categories", []))
 
 base = "http://localhost:8000/index.html" if "--http" in sys.argv else \
     "file:///" + os.path.join(ROOT, "index.html").replace("\\", "/")
@@ -42,18 +49,18 @@ with sync_playwright() as p:
     total = pg.evaluate("document.querySelectorAll('.card').length")
     sw = pg.evaluate("document.documentElement.scrollWidth")
     intro_gone = pg.evaluate("getComputedStyle(document.getElementById('intro')).display")
-    check("桌面: 卡片数=124", total == 124, "got %s" % total)
+    check("桌面: 卡片数=%d(内置条数)" % TOTAL, total == TOTAL, "got %s" % total)
     check("桌面: 无横向溢出", sw <= 1441, "scrollWidth=%d" % sw)
     check("桌面: 开场动画结束", intro_gone == "none", intro_gone)
     # 筛选：竞赛
     pg.click('.chip[data-cat="competition"]')
     pg.wait_for_timeout(150)
     n_comp = pg.evaluate("document.querySelectorAll('.card').length")
-    check("筛选: 竞赛=28", n_comp == 28, "got %s" % n_comp)
+    check("筛选: 竞赛=%d" % N_COMP, n_comp == N_COMP, "got %s" % n_comp)
     pg.click('.chip[data-cat="competition"]')
     pg.wait_for_timeout(150)
     n_all = pg.evaluate("document.querySelectorAll('.card').length")
-    check("筛选: 取消后=124", n_all == 124, "got %s" % n_all)
+    check("筛选: 取消后=%d" % TOTAL, n_all == TOTAL, "got %s" % n_all)
     # 级别筛选
     pg.click('[data-lv="国家级"]')
     pg.wait_for_timeout(150)
@@ -78,7 +85,7 @@ with sync_playwright() as p:
     navs = pg.evaluate("document.querySelectorAll('#semnav a').length")
     check("学期导航=8", navs == 8, "got %s" % navs)
     tlinks = pg.evaluate("document.querySelectorAll('a.ttl').length")
-    check("标题直达官方通知链接=124", tlinks == 124, "got %s" % tlinks)
+    check("标题直达官方通知链接=%d" % TOTAL, tlinks == TOTAL, "got %s" % tlinks)
     # scroll-spy：滚到底部后高亮应为 大四下
     pg.evaluate("window.scrollTo(0, document.body.scrollHeight)")
     pg.wait_for_timeout(500)
