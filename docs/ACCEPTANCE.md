@@ -13,6 +13,7 @@
 | A7 | docs/ 三份文档齐全（MAINTENANCE/DEPLOY/ACCEPTANCE）；维护指南可让用户独立新增一条事件 | 按 MAINTENANCE.md 演练：注入测试事件 → 校验（125 条 0 错误）→ 删除还原（124 条 0 错误） | ☑ 已达（2026-09-27） |
 | A8 | （追加）安全防护：防 iframe 嵌套劫持 / 防外域跳转 / 响应头齐全 / 源码无注入 | `python tools/check_security.py`（13 项断言） | ☑ 已达（2026-09-28，见 docs/SECURITY.md） |
 | A9 | （追加 v1.1）个人条目层：添加/删除/隐藏/恢复/导出导入、localStorage 持久化与降级保护、增删后统计/分组/倒计时自适应、既有布局零像素影响 | `python tools/check_user_layer.py`（30 项 × file:// 与 http）+ check_security 16 项 + 线上双线冒烟 7 项 | ☑ 已达（2026-10-09）：真机（手机连电脑热点）手动验收通过 |
+| A10 | （追加 v1.1 完整版）分享码/书签链接/JSON 三载体往返、合并与覆盖导入、坏码拒绝（截断/篡改/非法URL/超限201条）、F8 编排（线性滚动→300ms 单次闪烁→黄色提示条→直达备份区）、筛选冲突自动复位、快速连发幂等、reduced-motion 降级、多标签 storage 联动 | `python tools/check_user_layer.py`（file:// 60 项 + --http 62 项）+ 线上双线冒烟 10 项 + 视觉回归 0 像素差 | ☑ 已达（2026-10-09）：真机手动验收通过 |
 
 ## 数据缺口与免责（如实声明）
 

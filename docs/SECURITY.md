@@ -12,6 +12,8 @@
 | ② 页面级 JS 兜底 | `assets/js/security.js`（head 首个脚本） | 被嵌套时强制跳出到顶层（含 2 秒巡检，防二次注入）；拦截"当前窗口"向外部域名的点击跳转（`target=_blank` 的官方通知链接不受影响）；在 http(s) 下动态注入 meta CSP；OPPO/HeyTap/ColorOS UA 提示条（可关闭） |
 | ③ GitHub Pages 站 | 无响应头能力 | 依赖 ② 的 JS + meta CSP 兜底（平台限制，见"已知局限"） |
 
+> 个人数据与分享码：个人条目/隐藏名单只存本机 localStorage；分享码仅经剪贴板、URL hash（`#u=`，不进查询串）或本地文件传递——**全程零网络传输**，导入内容一律经转义与校验后才渲染。
+
 响应头 CSP（`_headers` 实配）：
 ```
 default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
