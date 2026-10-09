@@ -1,10 +1,12 @@
 /* ==========================================================================
-   user-layer.js — v1.1 个人条目层
-   功能：添加 / 删除（自定义=永久删除；内置=本机隐藏可恢复）/ 管理面板 / 导入导出 / 降级
-   存储：tl-user-events-v1（自定义条目数组）· tl-hidden-ids-v1（内置条目隐藏名单）
-   原则：合并无状态每次重算；所有 localStorage 读写 try/catch；用户输入一律转义；
-         无内联脚本 / 无内联事件属性（CSP: script-src 'self'）。
-   接口：window.UserLayer = { merge, validate, exportData, importData, init, listBuiltIn }
+   user-layer.js — v1.1 个人条目层 + 分享码同步 + F8 定位编排
+   功能：添加 / 删除（自定义=永久删除；内置=本机隐藏可恢复）/ 管理面板 /
+         三载体备份（分享码 TL1: / 个人书签链接 #u= / JSON 文件）/
+         新条目定位动画（线性滚动 → 单次闪烁 → 黄色备份提示条）/ 降级
+   存储：tl-user-events-v1（自定义条目）· tl-hidden-ids-v1（隐藏名单）· tl-uid-v1（本机随机 id）
+   原则：合并无状态每次重算；localStorage 全 try/catch；用户输入/导入一律转义与校验；
+         纯前端零网络传输；无内联脚本 / 无内联事件属性（CSP: script-src 'self'）。
+   接口：window.UserLayer = { merge, validate, encode, decode, importData, exportData, init, listBuiltIn }
    ========================================================================== */
 (function () {
   "use strict";
@@ -33,6 +35,16 @@
   ];
   var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
   var URL_RE = /^https?:\/\//i;
+  var KEY_UID = "tl-uid-v1";
+  var CODE_PREFIX = "TL1:";
+  var CHECK_MSG = "码不完整或已被修改，请重新复制完整内容";
+  /* F8 动画常量（集中于此，便于调整） */
+  var SCROLL_PX_PER_MS = 1.8;
+  var SCROLL_MIN_MS = 350;
+  var SCROLL_MAX_MS = 1000;
+  var FLASH_DELAY_MS = 0;
+  var FLASH_MS = 300;
+  var TOAST_MS = 9000;
 
   var TL = null;
   var storageOK = false;
@@ -74,6 +86,163 @@
   }
   function semExists(code) {
     return SEMS.some(function (s) { return s[0] === code; });
+  }
+
+  /* ---------------- 本机随机 UID（仅随分享码携带，不做任何统计） ---------------- */
+  function uuid() {
+    var hex = "0123456789abcdef", s = "";
+    for (var i = 0; i < 32; i++) s += hex[(Math.random() * 16) | 0];
+    return s.slice(0, 8) + "-" + s.slice(8, 12) + "-4" + s.slice(13, 16) + "-" +
+      "89ab".charAt((Math.random() * 4) | 0) + s.slice(17, 20) + "-" + s.slice(20);
+  }
+  function getUid() {
+    try {
+      var u = W.localStorage.getItem(KEY_UID);
+      if (u && typeof u === "string" && u.length >= 8 && u.length <= 64) return u;
+    } catch (e) { }
+    var n = uuid();
+    try { W.localStorage.setItem(KEY_UID, n); } catch (e) { }
+    return n;
+  }
+
+  /* ---------------- 分享码编解码（自实现，零第三方；TL1: 前缀） ---------------- */
+  var B64CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  function b64urlFromBytes(bytes) {
+    var out = "", i, n1, n2;
+    for (i = 0; i + 2 < bytes.length; i += 3) {
+      var n = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
+      out += B64CHARS.charAt((n >> 18) & 63) + B64CHARS.charAt((n >> 12) & 63) +
+        B64CHARS.charAt((n >> 6) & 63) + B64CHARS.charAt(n & 63);
+    }
+    var rem = bytes.length - i;
+    if (rem === 1) {
+      n1 = bytes[i] << 16;
+      out += B64CHARS.charAt((n1 >> 18) & 63) + B64CHARS.charAt((n1 >> 12) & 63);
+    } else if (rem === 2) {
+      n2 = (bytes[i] << 16) | (bytes[i + 1] << 8);
+      out += B64CHARS.charAt((n2 >> 18) & 63) + B64CHARS.charAt((n2 >> 12) & 63) + B64CHARS.charAt((n2 >> 6) & 63);
+    }
+    return out;
+  }
+  function bytesFromB64url(s) {
+    if (/[^A-Za-z0-9\-_]/.test(s)) throw new Error("分享码格式错误（含非法字符）");
+    var out = [], buf = 0, bits = 0, i, v;
+    for (i = 0; i < s.length; i++) {
+      v = B64CHARS.indexOf(s.charAt(i));
+      if (v < 0) throw new Error("分享码格式错误（含非法字符）");
+      buf = (buf << 6) | v;
+      bits += 6;
+      if (bits >= 8) { bits -= 8; out.push((buf >> bits) & 255); }
+    }
+    return new Uint8Array(out);
+  }
+  function fnv1a(str) {
+    var h = 2166136261;
+    for (var i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = (h * 16777619) >>> 0;
+    }
+    return ("0000000" + h.toString(16)).slice(-8).slice(0, 4);
+  }
+  function canCodecStream() {
+    return typeof W.CompressionStream === "function" && typeof W.DecompressionStream === "function" &&
+      typeof W.Blob === "function" && typeof W.Response === "function";
+  }
+  function deflateRaw(bytes) {
+    try {
+      var stream = new W.Blob([bytes]).stream().pipeThrough(new W.CompressionStream("deflate-raw"));
+      return new W.Response(stream).arrayBuffer().then(function (buf) { return new Uint8Array(buf); });
+    } catch (e) { return Promise.reject(e); }
+  }
+  function inflateRaw(bytes) {
+    try {
+      var stream = new W.Blob([bytes]).stream().pipeThrough(new W.DecompressionStream("deflate-raw"));
+      return new W.Response(stream).arrayBuffer().then(function (buf) { return new Uint8Array(buf); });
+    } catch (e) { return Promise.reject(e); }
+  }
+  /* 紧凑化：categories / level / semester 映射为索引；其余字段用短键 */
+  function compactPayload(entries, hidden) {
+    var p = { v: 1, t: new Date().toISOString(), uid: getUid(), e: [], h: [] };
+    p.h = (hidden || []).slice(0, LIMIT_HIDDEN);
+    (entries || []).slice(0, LIMIT_EVENTS).forEach(function (e) {
+      var src = (e.sources && e.sources[0]) || {};
+      p.e.push({
+        i: String(e.id), ti: String(e.title || ""),
+        c: (e.categories || []).map(function (x) { return CATS.indexOf(x); }).filter(function (x) { return x >= 0; }),
+        l: LEVELS.indexOf(e.level),
+        s: SEMS.map(function (x) { return x[0]; }).indexOf(e.semester),
+        r: [e.registration && e.registration.start || "", e.registration && e.registration.end || ""],
+        v: [e.event && e.event.start || "", e.event && e.event.end || ""],
+        p2: [e.points && e.points.second_classroom || "", e.points && e.points.zongce || ""],
+        n: String(e.notes || ""),
+        su: String(src.url || ""), sn: String(src.title || "")
+      });
+    });
+    return p;
+  }
+  function expandPayload(p) {
+    var events = [], hidden = [];
+    (p.e || []).forEach(function (x) {
+      if (!x || typeof x !== "object") return;
+      events.push({
+        id: String(x.i || ""),
+        title: String(x.ti || ""),
+        categories: (x.c || []).map(function (k) { return CATS[k]; }).filter(Boolean),
+        level: LEVELS[x.l] || "",
+        semester: (SEMS[x.s] || [])[0] || "",
+        registration: { start: (x.r && x.r[0]) || "", end: (x.r && x.r[1]) || "" },
+        event: { start: (x.v && x.v[0]) || "", end: (x.v && x.v[1]) || "" },
+        points: { second_classroom: (x.p2 && x.p2[0]) || "", zongce: (x.p2 && x.p2[1]) || "" },
+        notes: String(x.n || ""),
+        sources: x.su ? [{ title: String(x.sn || "自填来源"), url: String(x.su) }] : []
+      });
+    });
+    hidden = (p.h || []).filter(function (x) { return typeof x === "string" && x; });
+    return { events: events, hidden: hidden };
+  }
+  function encode(entries, hidden) {
+    var json = JSON.stringify(compactPayload(entries, hidden));
+    var bytes = new TextEncoder().encode(json);
+    var useZ = canCodecStream();
+    var work = useZ ? deflateRaw(bytes) : Promise.resolve(bytes);
+    return work.then(function (out) {
+      var content = b64urlFromBytes(out instanceof Uint8Array ? out : new Uint8Array(out));
+      return CODE_PREFIX + (useZ ? "z" : "p") + fnv1a(content) + ":" + content;
+    });
+  }
+  function decode(code) {
+    try {
+      var s = String(code == null ? "" : code).replace(/\s+/g, "");
+      if (s.slice(0, CODE_PREFIX.length) !== CODE_PREFIX) {
+        return Promise.reject(new Error("不是本应用的分享码（应以 TL1: 开头）"));
+      }
+      if (s.length > 60000) return Promise.reject(new Error("分享码内容过长，已拒绝"));
+      var flag = s.charAt(CODE_PREFIX.length);
+      if (flag !== "z" && flag !== "p") return Promise.reject(new Error("分享码格式错误（标志位异常）"));
+      var rest = s.slice(CODE_PREFIX.length + 1);
+      var ci = rest.indexOf(":");
+      if (ci < 0) return Promise.reject(new Error(CHECK_MSG));
+      var chk = rest.slice(0, ci), content = rest.slice(ci + 1);
+      if (chk !== fnv1a(content)) return Promise.reject(new Error(CHECK_MSG));
+      var bytes = bytesFromB64url(content);
+      var work;
+      if (flag === "z") {
+        if (!canCodecStream()) return Promise.reject(new Error("当前浏览器不支持解压此分享码，请升级浏览器或改用 JSON 文件"));
+        work = inflateRaw(bytes);
+      } else {
+        work = Promise.resolve(bytes);
+      }
+      return work.then(function (raw) {
+        var obj = null;
+        try { obj = JSON.parse(new TextDecoder().decode(raw)); }
+        catch (e) { throw new Error("分享码内容损坏，无法解析"); }
+        if (!obj || obj.v !== 1 || !Array.isArray(obj.e)) throw new Error("分享码版本不支持或内容不完整");
+        var ex = expandPayload(obj);
+        return { events: ex.events, hidden: ex.hidden, uid: String(obj.uid || ""), t: String(obj.t || "") };
+      });
+    } catch (e) {
+      return Promise.reject(e);
+    }
   }
 
   /* ---------------- 存储（全部 try/catch） ---------------- */
@@ -235,14 +404,14 @@
     b.addEventListener("click", onClick);
     return b;
   }
-  function confirmDialog(title, body, okText, danger, onOk) {
+  function confirmDialog(title, body, okText, danger, onOk, onCancel) {
     pushDialog(function (d) {
       d.appendChild(el("h3", null, title));
       var p = el("p", "tl-note");
       p.textContent = body;
       d.appendChild(p);
       var acts = el("div", "tl-actions");
-      acts.appendChild(btn("ghost", "取消", popDialog));
+      acts.appendChild(btn("ghost", "取消", function () { popDialog(); if (onCancel) onCancel(); }));
       acts.appendChild(btn(danger ? "danger" : "primary", okText, function () {
         popDialog();
         onOk();
@@ -370,11 +539,11 @@
           return;
         }
         var arr = userEvents();
-        arr.push(toEvent(draft, true, null));
+        var ne = toEvent(draft, true, null);
+        arr.push(ne);
         if (!writeArr(KEY_EVENTS, arr)) return;
         popDialog();
-        TL.refreshAll();
-        toast("已添加：" + draft.title.trim());
+        addedFlow(String(ne.id));   /* F1：关闭表单 → 筛选复位 → F8 编排 */
       }));
       d.appendChild(acts);
     }, "添加条目");
@@ -414,10 +583,10 @@
   }
 
   /* ---------------- 管理面板 ---------------- */
-  function openManageDialog() {
+  function openManageDialog(anchorBackup) {
     if (!storageOK) { toast("当前环境不支持本地存储"); return; }
     lastFocus = D.activeElement;
-    pushDialog(function (d) {
+    var dlg = pushDialog(function (d) {
       d.appendChild(el("h3", null, "管理我的数据"));
       if (brokenData) {
         var wbar = el("div", "tl-err show");
@@ -496,37 +665,90 @@
         }
         host.appendChild(sec2);
 
-        /* ③ 数据保险 */
+        /* ③ 备份与同步（F7 三载体；锚点 um-backup） */
         var sec3 = el("div", "tl-sec");
-        sec3.appendChild(el("h4", null, "数据保险"));
-        var row3 = el("div", "tl-actions");
-        row3.appendChild(btn("ghost", "导出 JSON", function (e) { exportData(); }));
+        sec3.id = "um-backup";
+        sec3.appendChild(el("h4", null, "备份与同步"));
+        sec3.appendChild(el("div", "tl-note", "三种载体任选其一：分享码文本 / 个人书签链接 / JSON 文件。全部仅在本机处理，不发送任何数据。"));
+
+        var box = el("textarea", "tl-code");
+        box.readOnly = true;
+        box.hidden = true;
+        box.setAttribute("data-f", "codebox");
+        sec3.appendChild(box);
+        var codeActs = el("div", "tl-actions");
+        codeActs.hidden = true;
+        var cpBtn = btn("ghost", "复制", function () { copyText(box.value, box); });
+        cpBtn.setAttribute("data-f", "copycode");
+        codeActs.appendChild(cpBtn);
+        sec3.appendChild(codeActs);
+        var codeNote = el("div", "tl-note tl-hide");
+        codeNote.textContent = "① 换设备 / 清缓存可用此码恢复；② 码含你的条目内容，请勿公开发送。";
+        sec3.appendChild(codeNote);
+
+        function gen(asLink) {
+          var mine2 = userEvents(), hid2 = hiddenIds();
+          if (!mine2.length && !hid2.length) { toast("本机暂无可备份的数据"); return; }
+          toast("正在生成…");
+          encode(mine2, hid2).then(function (code) {
+            box.hidden = false;
+            codeActs.hidden = false;
+            codeNote.classList.remove("tl-hide");
+            box.value = asLink ? linkWith(code) : code;
+            try { box.scrollTop = 0; } catch (e) { }
+          }, function (e) {
+            toast("生成失败：" + (e && e.message ? e.message : "未知错误"));
+          });
+        }
+        var genRow = el("div", "tl-actions");
+        genRow.appendChild(btn("ghost", "生成分享码", function () { gen(false); }));
+        genRow.appendChild(btn("ghost", "生成书签链接", function () { gen(true); }));
+        genRow.appendChild(btn("ghost", "导出 JSON 文件", function () { exportData(); }));
+        sec3.appendChild(genRow);
+
+        var impBox = el("textarea", "tl-code");
+        impBox.setAttribute("data-f", "impbox");
+        impBox.rows = 3;
+        impBox.placeholder = "粘贴分享码（TL1:…）或 JSON 备份内容";
+        sec3.appendChild(impBox);
+        var impRow = el("div", "tl-actions");
         var fileIn = el("input");
         fileIn.type = "file";
-        fileIn.accept = "application/json,.json";
+        fileIn.accept = ".json,.txt,application/json,text/plain";
         fileIn.classList.add("tl-hide");
         fileIn.addEventListener("change", function () {
           var f = fileIn.files && fileIn.files[0];
           fileIn.value = "";
-          if (f) importFile(f);
+          if (f) importFileF(f, "merge");
         });
-        row3.appendChild(fileIn);
-        row3.appendChild(btn("ghost", "导入 JSON", function () { fileIn.click(); }));
-        row3.appendChild(btn("danger", "清空我的所有自定义数据", function () {
-          confirmDialog("清空自定义数据", "将删除本机全部自定义条目并清除隐藏名单，确定继续？（可先导出备份）", "清空", true, function () {
-            try {
-              W.localStorage.removeItem(KEY_EVENTS);
-              W.localStorage.removeItem(KEY_HIDDEN);
-            } catch (e) { }
-            brokenData = false;
-            TL.refreshAll();
-            render();
-            toast("已清空");
-          });
-        }));
-        sec3.appendChild(row3);
-        sec3.appendChild(el("div", "tl-note", "上限：自定义条目 200 条 / 隐藏 300 条。数据仅存于本机浏览器。"));
+        impRow.appendChild(fileIn);
+        impRow.appendChild(btn("ghost", "从文件导入", function () { fileIn.click(); }));
+        impRow.appendChild(btn("primary", "粘贴导入（合并）", function () { importText(impBox.value, "merge"); }));
+        impRow.appendChild(btn("danger", "覆盖导入", function () { importText(impBox.value, "overwrite"); }));
+        sec3.appendChild(impRow);
         host.appendChild(sec3);
+
+        /* ④ 清空我的所有自定义数据（二次确认） */
+        var sec4 = el("div", "tl-sec");
+        sec4.appendChild(el("h4", null, "危险操作"));
+        sec4.appendChild(btn("danger", "清空我的所有自定义数据", function () {
+          confirmDialog("清空自定义数据",
+            "将删除本机全部自定义条目并清除隐藏名单（内置数据不受影响）。确定继续？（可先导出备份）",
+            "继续", true, function () {
+              confirmDialog("再次确认", "此操作不可恢复。确定清空本机全部自定义数据？", "确定清空", true, function () {
+                try {
+                  W.localStorage.removeItem(KEY_EVENTS);
+                  W.localStorage.removeItem(KEY_HIDDEN);
+                } catch (e) { }
+                brokenData = false;
+                TL.refreshAll();
+                render();
+                toast("已清空");
+              });
+            });
+        }));
+        sec4.appendChild(el("div", "tl-note", "上限：自定义条目 200 条 / 隐藏 300 条。数据仅存于本机浏览器。"));
+        host.appendChild(sec4);
       }
       render();
       d.appendChild(el("div", "tl-note", ""));
@@ -534,6 +756,15 @@
       acts.appendChild(btn("ghost", "关闭", popDialog));
       d.appendChild(acts);
     }, "管理我的数据");
+    if (anchorBackup && dlg) {
+      setTimeout(function () {
+        var sec = dlg.querySelector("#um-backup");
+        if (sec) {
+          var dr = dlg.getBoundingClientRect(), sr = sec.getBoundingClientRect();
+          dlg.scrollTop = dlg.scrollTop + (sr.top - dr.top) - 10;
+        }
+      }, 30);
+    }
   }
 
   /* ---------------- 导出 / 导入 ---------------- */
@@ -553,47 +784,307 @@
       toast("已导出 JSON（含自定义条目与隐藏名单）");
     } catch (e) { warn("导出失败", e); toast("导出失败：" + e.message); }
   }
-  function importFile(file) {
+  function linkWith(code) {
+    var base;
+    try {
+      base = (W.location.origin && W.location.origin !== "null")
+        ? W.location.origin + W.location.pathname
+        : W.location.href.split("#")[0];
+    } catch (e) { base = ""; }
+    return base + "#u=" + code;
+  }
+  function copyText(text, srcEl) {
+    function fallback() {
+      try { if (srcEl && srcEl.select) { srcEl.focus(); srcEl.select(); } } catch (e) { }
+      toast("已选中内容，请按 Ctrl+C / 长按复制");
+    }
+    try {
+      if (W.navigator && W.navigator.clipboard && W.navigator.clipboard.writeText) {
+        W.navigator.clipboard.writeText(text).then(function () { toast("已复制到剪贴板"); }, fallback);
+      } else fallback();
+    } catch (e) { fallback(); }
+  }
+
+  /* ---------------- 导入统一管线（分享码 / JSON 文本 / 文件） ---------------- */
+  function parseSource(text) {
+    var s = String(text == null ? "" : text).trim();
+    if (!s) return Promise.reject(new Error("内容为空，请先粘贴分享码或 JSON 备份"));
+    if (s.indexOf(CODE_PREFIX) === 0) {
+      return decode(s).then(function (r) { return { events: r.events, hidden: r.hidden, uid: r.uid }; });
+    }
+    if (s.length > 200000) return Promise.reject(new Error("内容过长，已拒绝"));
+    var obj = null;
+    try { obj = JSON.parse(s); } catch (e) {
+      return Promise.reject(new Error("无法识别：分享码应以 TL1: 开头，或粘贴完整 JSON 备份"));
+    }
+    var evs = [], hid = [];
+    if (Array.isArray(obj)) evs = obj;
+    else if (obj && typeof obj === "object") {
+      evs = Array.isArray(obj.events) ? obj.events : (Array.isArray(obj.e) ? obj.e : []);
+      hid = Array.isArray(obj.hiddenIds) ? obj.hiddenIds : (Array.isArray(obj.h) ? obj.h : []);
+    }
+    if (!evs.length && !hid.length) return Promise.reject(new Error("内容中没有可导入的条目"));
+    return Promise.resolve({ events: evs, hidden: hid, uid: String((obj && obj.uid) || "") });
+  }
+  function summarize(src, mode) {
+    var good = [], bad = 0, skipped = 0, seen = {}, exist = {};
+    var total = (src.events || []).length;
+    userEvents().forEach(function (x) { exist[String(x.id)] = 1; });
+    (src.events || []).slice(0, LIMIT_EVENTS + 50).forEach(function (raw) {
+      if (good.length >= LIMIT_EVENTS) { bad++; return; }
+      if (!raw || typeof raw !== "object") { bad++; return; }
+      if (validate(raw).length) { bad++; return; }
+      var rawId = String(raw.id == null ? "" : raw.id);
+      if (mode === "merge" && (exist[rawId] || seen[rawId])) { skipped++; return; }
+      var ev = toEvent(raw, false, seen);
+      good.push(ev);
+    });
+    var hid = (src.hidden || [])
+      .filter(function (x) { return typeof x === "string" && x && x.length <= 120; })
+      .slice(0, LIMIT_HIDDEN);
+    return { good: good, bad: bad, skipped: skipped, hid: hid, total: total, over: total > LIMIT_EVENTS };
+  }
+  function applyImport(sum, mode) {
+    var events, hid;
+    if (mode === "overwrite") {
+      events = sum.good;
+      hid = sum.hid;
+    } else {
+      events = userEvents();
+      var have = {};
+      events.forEach(function (x) { have[String(x.id)] = 1; });
+      sum.good.forEach(function (e) { if (!have[String(e.id)]) { events.push(e); have[String(e.id)] = 1; } });
+      if (events.length > LIMIT_EVENTS) events = events.slice(0, LIMIT_EVENTS);
+      hid = hiddenIds();
+      sum.hid.forEach(function (h) { if (hid.indexOf(h) < 0) hid.push(h); });
+      hid = hid.slice(0, LIMIT_HIDDEN);
+    }
+    if (!writeArr(KEY_EVENTS, events)) return false;
+    if (!writeArr(KEY_HIDDEN, hid)) return false;
+    TL.refreshAll();
+    return true;
+  }
+  function importText(text, mode) {
+    mode = mode === "overwrite" ? "overwrite" : "merge";
+    if (!storageOK) { toast("当前环境不支持本地存储"); return Promise.resolve(false); }
+    return parseSource(text).then(function (src) {
+      var sum = summarize(src, mode);
+      if (sum.over) {
+        toast("内容含 " + sum.total + " 条，超过本机上限 " + LIMIT_EVENTS + " 条，已拒绝");
+        return false;
+      }
+      if (!sum.good.length && sum.bad > 0) {
+        toast("没有可导入的有效条目（无效 " + sum.bad + " 条）");
+        return false;
+      }
+      var smry = "新增 " + sum.good.length + " 条 / 跳过 " + sum.skipped + " 条重复 / 无效 " + sum.bad + " 条。";
+      var modeTxt = mode === "overwrite"
+        ? "覆盖模式：将整体替换本机全部自定义条目与隐藏名单。"
+        : "合并模式：按 id 去重。";
+      var uidNote = (src.uid && src.uid === getUid()) ? "（此码来自本机）" : "";
+      if (!sum.good.length && !sum.bad && !sum.hid.length && !sum.skipped) {
+        toast("没有可导入的数据");
+        return false;
+      }
+      return new Promise(function (resolve) {
+        confirmDialog("导入确认", smry + uidNote + modeTxt + "确定继续？", "继续", mode === "overwrite", function () {
+          var doWrite = function () {
+            if (applyImport(sum, mode)) {
+              toast(mode === "overwrite"
+                ? ("已覆盖导入 " + sum.good.length + " 条")
+                : ("已合并导入 " + sum.good.length + " 条" + (sum.skipped ? "（跳过 " + sum.skipped + " 条重复）" : "")));
+            }
+            resolve(true);
+          };
+          if (mode === "overwrite") {
+            confirmDialog("再次确认", "覆盖导入不可恢复（建议先导出备份）。确定替换本机全部数据？", "覆盖导入", true, doWrite, function () { resolve(false); });
+          } else {
+            doWrite();
+          }
+        }, function () { resolve(false); });
+      });
+    }, function (e) {
+      toast(e && e.message ? e.message : "导入失败");
+      return false;
+    });
+  }
+  function importFileF(file, mode) {
     if (!storageOK) { toast("当前环境不支持本地存储"); return; }
     var reader = new FileReader();
-    reader.onload = function () {
-      var parsed = null;
-      try { parsed = JSON.parse(String(reader.result)); }
-      catch (e) { toast("导入失败：不是有效的 JSON 文件"); return; }
-      var srcEvents = [], srcHidden = [];
-      if (Array.isArray(parsed)) {
-        srcEvents = parsed;
-      } else if (parsed && typeof parsed === "object" && Array.isArray(parsed.events)) {
-        srcEvents = parsed.events;
-        srcHidden = Array.isArray(parsed.hiddenIds) ? parsed.hiddenIds : [];
-      } else { toast("导入失败：文件结构不符"); return; }
-
-      var seen = {};
-      var good = [], bad = 0;
-      srcEvents.slice(0, LIMIT_EVENTS + 50).forEach(function (raw) {
-        if (good.length >= LIMIT_EVENTS) { bad++; return; }
-        if (!raw || typeof raw !== "object") { bad++; return; }
-        var errs = validate(raw);
-        if (errs.length) { bad++; return; }
-        good.push(toEvent(raw, false, seen));
-      });
-      if (!good.length) { toast("没有可导入的有效条目（无效 " + bad + " 条）"); return; }
-      var hid = srcHidden
-        .filter(function (x) { return typeof x === "string" && x && x.length <= 120; })
-        .slice(0, LIMIT_HIDDEN);
-
-      confirmDialog("导入确认",
-        "将导入 " + good.length + " 条（无效 " + bad + " 条将被忽略），并替换当前的自定义条目与隐藏名单。确定继续？",
-        "导入", false, function () {
-          if (writeArr(KEY_EVENTS, good) && writeArr(KEY_HIDDEN, hid)) {
-            TL.refreshAll();
-            toast("已导入 " + good.length + " 条");
-            popDialog();          /* 关闭管理面板，回到干净状态 */
-          }
-        });
-    };
+    reader.onload = function () { importText(String(reader.result), mode || "merge"); };
     reader.onerror = function () { toast("读取文件失败"); };
     reader.readAsText(file);
+  }
+
+  /* ---------------- F8 编排：定位 → 闪烁 → 备份提示条（可取消 / 幂等） ---------------- */
+  var fx = { cancelScroll: null, flashTimer: null, flashCardEl: null, toastEl: null, toastTimer: null };
+  var fxGen = 0;
+
+  function reducedMotion() {
+    try { return W.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; }
+  }
+  function findCard(id) {
+    var cards = D.querySelectorAll("article.card[data-eid]");
+    for (var i = 0; i < cards.length; i++) {
+      if (cards[i].getAttribute("data-eid") === id) return cards[i];
+    }
+    return null;
+  }
+  function hideBackupToast() {
+    if (fx.toastTimer) { clearTimeout(fx.toastTimer); fx.toastTimer = null; }
+    var t = fx.toastEl;
+    fx.toastEl = null;
+    if (!t) return;
+    t.classList.remove("in");
+    setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 260);
+  }
+  function cancelFx() {
+    if (fx.cancelScroll) { fx.cancelScroll(); fx.cancelScroll = null; }
+    if (fx.flashTimer) { clearTimeout(fx.flashTimer); fx.flashTimer = null; }
+    if (fx.flashCardEl) { fx.flashCardEl.classList.remove("flash"); fx.flashCardEl = null; }
+    hideBackupToast();
+  }
+  /* F8-1 线性滚动（rAF 匀速；用户滚轮/触摸立即取消；reduced-motion 直接定位） */
+  function scrollToCard(id) {
+    return new Promise(function (resolve) {
+      var cardEl = findCard(id);
+      if (!cardEl) { resolve(); return; }
+      var filtersEl = D.querySelector(".filters");
+      var fh = filtersEl ? filtersEl.getBoundingClientRect().height : 0;
+      var target = cardEl.getBoundingClientRect().top + W.scrollY - (fh + 24);
+      var maxY = Math.max(0, D.documentElement.scrollHeight - W.innerHeight);
+      target = Math.min(Math.max(0, target), maxY);
+      var start = W.scrollY, delta = target - start;
+      if (Math.abs(delta) < 2) { resolve(); return; }
+      var html = D.documentElement;
+      if (reducedMotion()) {
+        var sbR = html.style.scrollBehavior;
+        html.style.scrollBehavior = "auto";  /* 屏蔽全局 smooth，直接定位 */
+        W.scrollTo(0, target);
+        html.style.scrollBehavior = sbR;
+        resolve();
+        return;
+      }
+      var dur = Math.min(SCROLL_MAX_MS, Math.max(SCROLL_MIN_MS, Math.abs(delta) / SCROLL_PX_PER_MS));
+      var sb = html.style.scrollBehavior;
+      html.style.scrollBehavior = "auto";  /* 临时屏蔽全局 smooth，由 rAF 线性驱动 */
+      var raf = null, t0 = null, done = false;
+      function cleanup() {
+        html.style.scrollBehavior = sb;
+        W.removeEventListener("wheel", onUser, true);
+        W.removeEventListener("touchstart", onUser, true);
+        if (fx.cancelScroll === abort) fx.cancelScroll = null;
+      }
+      function finish() {
+        if (done) return;
+        done = true;
+        if (raf) cancelAnimationFrame(raf);
+        cleanup();
+        resolve();
+      }
+      function abort() { finish(); }  /* 用户打断：按"已停止"处理，继续后续步骤 */
+      function onUser() { abort(); }
+      fx.cancelScroll = abort;
+      W.addEventListener("wheel", onUser, true);
+      W.addEventListener("touchstart", onUser, true);
+      function step(ts) {
+        if (!t0) t0 = ts;
+        var k = Math.min(1, (ts - t0) / dur);
+        W.scrollTo(0, start + delta * k);
+        if (k < 1) raf = W.requestAnimationFrame(step);
+        else finish();
+      }
+      raf = W.requestAnimationFrame(step);
+    });
+  }
+  /* F8-2 单次高亮闪烁（300ms；reduced-motion 由 CSS 降级为静态描边） */
+  function flashCardFx(id) {
+    return new Promise(function (resolve) {
+      var cardEl = findCard(id);
+      if (!cardEl) { resolve(); return; }
+      cardEl.classList.remove("flash");
+      void cardEl.offsetWidth;
+      cardEl.classList.add("flash");
+      fx.flashCardEl = cardEl;
+      fx.flashTimer = setTimeout(function () {
+        cardEl.classList.remove("flash");
+        if (fx.flashCardEl === cardEl) fx.flashCardEl = null;
+        fx.flashTimer = null;
+        resolve();
+      }, FLASH_DELAY_MS + FLASH_MS);
+    });
+  }
+  /* F8-3 黄色备份提示条（9 秒自动收起；可关闭；避让 #ua-tip；z-index 10001） */
+  function showBackupToast(onPrimary) {
+    hideBackupToast();
+    var bar = el("div", "userToast");
+    bar.setAttribute("role", "status");
+    bar.setAttribute("aria-live", "polite");
+    var tip = D.getElementById("ua-tip");
+    if (tip) {
+      try { bar.style.bottom = (24 + tip.getBoundingClientRect().height) + "px"; } catch (e) { }
+    }
+    var x = el("button", "ut-close", "×");
+    x.type = "button";
+    x.setAttribute("aria-label", "关闭提示");
+    x.addEventListener("click", hideBackupToast);
+    bar.appendChild(x);
+    bar.appendChild(el("div", "ut-title", "新条目已保存到本机"));
+    bar.appendChild(el("div", "ut-body",
+      "自定义条目只存在于当前浏览器：清理浏览器数据、更换设备，或 iPhone 超过 7 天未访问，都可能让它丢失。生成备份码后可随时找回。"));
+    var acts = el("div", "ut-actions");
+    acts.appendChild(btn("primary", "生成备份码", function () {
+      hideBackupToast();
+      if (onPrimary) onPrimary();
+    }));
+    acts.appendChild(btn("ghost", "知道了", hideBackupToast));
+    bar.appendChild(acts);
+    D.body.appendChild(bar);
+    fx.toastEl = bar;
+    if (reducedMotion()) {
+      bar.classList.add("noanim", "in");
+    } else {
+      W.requestAnimationFrame(function () { W.requestAnimationFrame(function () { bar.classList.add("in"); }); });
+    }
+    fx.toastTimer = setTimeout(hideBackupToast, TOAST_MS);
+  }
+  /* 添加成功总编排：仅用于"添加成功"，取消旧动画，保证任一时刻 ≤1 套（F8-5②） */
+  function addedFlow(id) {
+    cancelFx();
+    var gen = ++fxGen;
+    TL.refreshAll();
+    if (!findCard(id) && TL.resetFilters) TL.resetFilters();  /* F8-5① 筛选复位 */
+    scrollToCard(id).then(function () {
+      if (gen !== fxGen) return;
+      flashCardFx(id).then(function () {
+        if (gen !== fxGen) return;
+        showBackupToast(function () { openManageDialog(true); });  /* 直达备份区 */
+      });
+    });
+  }
+  /* F7 载体2：个人书签链接 #u= 导入 */
+  function handleShareHash() {
+    var h = String(W.location.hash || "");
+    if (h.slice(0, 3) !== "#u=") return;
+    var code = h.slice(3);
+    try { code = decodeURIComponent(code); } catch (e) { }
+    function clearHash() {
+      try { W.history.replaceState(null, "", W.location.pathname + W.location.search); } catch (e) { }
+    }
+    setTimeout(function () {
+      if (!storageOK) { toast("当前环境不支持本地存储"); clearHash(); return; }
+      pushDialog(function (d) {
+        d.appendChild(el("h3", null, "检测到分享码"));
+        d.appendChild(el("div", "tl-note", "是否导入？链接含条目内容，请勿公开转发。"));
+        var acts = el("div", "tl-actions");
+        acts.appendChild(btn("ghost", "忽略", function () { popDialog(); clearHash(); }));
+        acts.appendChild(btn("primary", "导入", function () {
+          popDialog();
+          importText(code, "merge").then(function () { clearHash(); }, function () { clearHash(); });
+        }));
+        d.appendChild(acts);
+      }, "检测到分享码");
+    }, 500);
   }
 
   /* ---------------- 初始化 ---------------- */
@@ -629,13 +1120,33 @@
       e.stopPropagation();
       handleDelete(String(b.getAttribute("data-del")));
     }, true);
+    /* F6 多标签联动：任一标签页增删后其余标签页即时刷新 */
+    W.addEventListener("storage", function (ev) {
+      if (!ev || !ev.key || ev.key.indexOf("tl-") === 0) {
+        if (TL && TL.refreshAll) TL.refreshAll();
+      }
+    });
+    /* F6 降级提示 */
+    if (!storageOK) {
+      var bar = D.querySelector(".userbar");
+      if (bar && bar.parentNode) {
+        bar.parentNode.insertBefore(
+          el("div", "tl-note", "当前环境不支持本地存储：添加 / 管理已禁用，只读浏览不受影响。"),
+          bar.nextSibling);
+      }
+    }
+    /* F7 载体2：检测 #u= 分享链接（整页加载 + 同页 hash 变化双通道） */
+    handleShareHash();
+    W.addEventListener("hashchange", handleShareHash);
   }
 
   W.UserLayer = {
     merge: merge,
     validate: validate,
+    encode: encode,
+    decode: decode,
+    importData: importText,
     exportData: exportData,
-    importData: importFile,
     init: init,
     listBuiltIn: listBuiltIn
   };

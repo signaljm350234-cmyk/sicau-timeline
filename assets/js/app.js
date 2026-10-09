@@ -305,6 +305,13 @@
       renderStats();
       renderUpcoming();
       renderTimeline();
+    },
+    resetFilters: function () {
+      actCats.clear();
+      actLv = "全部";
+      $$(".chip").forEach(function (c) { c.classList.toggle("on", c.dataset.cat === "all"); });
+      $$("[data-lv]").forEach(function (b) { b.classList.toggle("on", b.dataset.lv === "全部"); });
+      renderTimeline();
     }
   };
   if (window.UserLayer) window.UserLayer.init(window.TL);
